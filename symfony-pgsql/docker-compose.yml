@@ -1,43 +1,56 @@
 version: '3.8'
 
+x-volume-root-project: &volume_root_project "./:/var/www/html"
+
 services:
 
   app:
+    container_name: app
+    restart: always
     build:
       context: ./docker/php
       dockerfile: Dockerfile
-    ports:
-      - "9000"
     volumes:
-      - .:/var/www/html
+      - *volume_root_project
     depends_on:
       - database
       - redis
       - rabbitmq
     networks:
-      fundsmanager_net:
-        aliases:
-          - my-project.local
+      - fundsmanager_net
 
-###> doctrine/doctrine-bundle ###
+  nginx:
+    restart: always
+    image: nginx:latest
+    ports:
+      - "8088:80"
+    volumes:
+      - "./docker/nginx/conf.d:/etc/nginx/conf.d:ro"
+      - *volume_root_project
+    depends_on:
+      - app
+    networks:
+      - fundsmanager_net
+
   database:
+    restart: always
     image: postgres:${POSTGRES_VERSION:-15}-alpine
     ports:
       - "5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
       POSTGRES_USER: ${POSTGRES_USER:-app}
+      TZ: Europe/Moscow
+      PGTZ: Europe/Moscow
     networks:
       - fundsmanager_net
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+       - database_data:/var/lib/postgresql/data:rw
+#      - ./docker/db/data:/var/lib/postgresql/data:rw
 
   redis:
+    restart: always
     image: redis:latest
     ports:
       - "6379:6379"
@@ -45,7 +58,10 @@ services:
       - fundsmanager_net
 
   rabbitmq:
+    restart: always
     image: rabbitmq:3-management
+    volumes:
+      - "rabbitmq-data:/var/lib/rabbitmq"
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -60,6 +76,5 @@ networks:
     driver: bridge
 
 volumes:
-###> doctrine/doctrine-bundle ###
   database_data:
-###< doctrine/doctrine-bundle ###
+  rabbitmq-data:
