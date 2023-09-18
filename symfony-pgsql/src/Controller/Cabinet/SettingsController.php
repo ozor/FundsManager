@@ -8,10 +8,18 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SettingsController extends AbstractController
 {
-    #[Route('/settings', name: 'app_settings')]
+    #[Route('/settings', name: 'app_cabinet_settings')]
     public function index(): Response
     {
         return $this->render('cabinet/settings/index.html.twig', [
+            'controller_name' => 'SettingsController',
+        ]);
+    }
+
+    #[Route('/settings/password', name: 'app_cabinet_settings_password')]
+    public function password(): Response
+    {
+        return $this->render('cabinet/settings/password.html.twig', [
             'controller_name' => 'SettingsController',
         ]);
     }
